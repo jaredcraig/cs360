@@ -196,7 +196,6 @@ string Client::get_response() {
 	string response = "";
 	// read until we get a newline
 	while (response.find("\n") == string::npos) {
-	cout << "GET RESPONSE: " << endl;
 		int nread = recv(server_, buf_, 1024, 0);
 		if (nread < 0) {
 			if (errno == EINTR)
