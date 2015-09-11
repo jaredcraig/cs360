@@ -24,7 +24,8 @@ public:
 	void run();
 
 protected:
-	//virtual void close_socket();
+	virtual void close_socket();
+    virtual void create();
 	bool send_request(string);
 	string get_response();
 	void prompt();
@@ -36,7 +37,6 @@ protected:
 	void sendPut(string, string, string);
 	void sendRead(string, int);
 	void sendList(string);
-
 	int server_;
 	int buflen_;
 	char* buf_;

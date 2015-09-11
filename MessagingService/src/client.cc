@@ -11,6 +11,7 @@ Client::~Client() {
 
 //-----------------------------------------------------------------------------
 void Client::run() {
+	create();
 	string command;
 
 	// loop to handle user interface
@@ -25,10 +26,19 @@ void Client::run() {
 }
 
 //-----------------------------------------------------------------------------
+void
+Client::create() {
+}
+
+//-----------------------------------------------------------------------------
+void
+Client::close_socket() {
+}
+
+//-----------------------------------------------------------------------------
 bool Client::parseCommand(string command) {
 	string cmd = "";
 	istringstream iss;
-	iss.clear();
 	iss.str(command);
 	iss >> cmd;
 	if (cmd == "quit") {
@@ -89,29 +99,60 @@ string Client::getMessage() {
 //-----------------------------------------------------------------------------
 void Client::sendPut(string name, string subject, string data) {
 	ostringstream oss;
-	oss << "put " << name << " " << subject << " " << " " << data.size() << endl
+	oss << "put " << name << " " << subject << " " << data.size() << endl
 			<< data;
 	send_request(oss.str());
 }
 
 //-----------------------------------------------------------------------------
 void Client::sendRead(string name, int index) {
-
+	ostringstream oss;
+	oss << "get " << name << " " << index << endl;
+	send_request(oss.str());
 }
 
 //-----------------------------------------------------------------------------
 void Client::sendList(string name) {
-
+	ostringstream oss;
+	oss << "list " << name << endl;
+	send_request(oss.str());
 }
 
 //-----------------------------------------------------------------------------
 void Client::responseToRead() {
-
+	string response = get_response();
+	string word;
+	istringstream iss;
+	iss.str(response);
+	iss >> word;
+	if (word != "read") {
+		cout << "Server returned bad message: " << response;
+		return;
+	}
+	
+	cout << iss.str();
 }
 
 //-----------------------------------------------------------------------------
 void Client::responseToList() {
-
+	string response = get_response();
+	string word;
+	istringstream iss;
+	iss.str(response);
+	iss >> word;
+	if (word != "list") {
+		cout << "Server returned bad message: " << response;
+		return;
+	}
+	int i;
+	iss >> i;
+	string data;
+	while (iss >> i) {
+		cout << i << " ";
+		iss.clear();
+		iss >> data;
+		cout << data << endl;
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -125,7 +166,6 @@ void Client::responseToPut() {
 
 //-----------------------------------------------------------------------------
 bool Client::send_request(string request) {
-	cout << "SEND REQUEST: " << request;
 	// prepare to send request
 	const char* ptr = request.c_str();
 	int nleft = request.length();
@@ -156,6 +196,7 @@ string Client::get_response() {
 	string response = "";
 	// read until we get a newline
 	while (response.find("\n") == string::npos) {
+	cout << "GET RESPONSE: " << endl;
 		int nread = recv(server_, buf_, 1024, 0);
 		if (nread < 0) {
 			if (errno == EINTR)
