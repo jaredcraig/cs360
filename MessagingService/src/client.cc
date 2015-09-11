@@ -18,8 +18,8 @@ void Client::run() {
 		prompt();
 		getline(cin, command);
 		command += "\n";
-		if (!parseCommand(command)) {
-			cout << "I don't recognize that command." << endl;
+		if (parseCommand(command) == false) {
+			cout << "I don't recognize that command!." << endl;
 		}
 	}
 }
@@ -28,6 +28,7 @@ void Client::run() {
 bool Client::parseCommand(string command) {
 	string cmd = "";
 	istringstream iss;
+	iss.clear();
 	iss.str(command);
 	iss >> cmd;
 	if (cmd == "quit") {
@@ -36,12 +37,15 @@ bool Client::parseCommand(string command) {
 		string name;
 		string subject;
 		try {
+		  cout << "TRY BLOCK" << endl;
 			iss >> name;
+			cout << name;
 			iss >> subject;
 		} catch (...) {
 			return false;
 		}
 		string data = getMessage();
+		cout << data << endl;
 		sendPut(name, subject, data);
 		responseToPut();
 		return true;
@@ -70,6 +74,25 @@ bool Client::parseCommand(string command) {
 		return true;
 	}
 	return false;
+}
+
+//-----------------------------------------------------------------------------
+void Client::prompt() {
+	cout << "% ";
+}
+
+//-----------------------------------------------------------------------------
+string Client::getMessage() {
+	string line;
+	stringstream ss;
+	cout << "- Type your message. End with a blank line -\n";
+	while (getline(cin, line)) {
+		if (line == "") {
+			break;
+		}
+		ss << line << "\n";
+	}
+	return ss.str();
 }
 
 //-----------------------------------------------------------------------------
@@ -107,25 +130,6 @@ void Client::responseToPut() {
 		cout << "Server returned bad message: " << response << endl;
 		return;
 	}
-}
-
-//-----------------------------------------------------------------------------
-void Client::prompt() {
-	cout << "% ";
-}
-
-//-----------------------------------------------------------------------------
-string Client::getMessage() {
-	string line;
-	stringstream ss;
-	cout << "- Type your message. End with a blank line -\n";
-	while (getline(cin, line)) {
-		if (line == "") {
-			break;
-		}
-		ss << line << "\n";
-	}
-	return ss.str();
 }
 
 //-----------------------------------------------------------------------------
