@@ -36,26 +36,19 @@ bool Client::parseCommand(string command) {
 	} else if (cmd == "send") {
 		string name;
 		string subject;
-		try {
-		  cout << "TRY BLOCK" << endl;
-			iss >> name;
-			cout << name;
-			iss >> subject;
-		} catch (...) {
+		iss >> name;
+		iss >> subject;
+		if (iss.fail())
 			return false;
-		}
 		string data = getMessage();
-		cout << data << endl;
 		sendPut(name, subject, data);
 		responseToPut();
 		return true;
 	} else if (cmd == "list") {
 		string name;
-		try {
-			iss >> name;
-		} catch (...) {
+		iss >> name;
+		if (iss.fail())
 			return false;
-		}
 		sendList(name);
 		responseToList();
 		return true;
@@ -63,12 +56,10 @@ bool Client::parseCommand(string command) {
 	} else if (cmd == "read") {
 		string name;
 		int index;
-		try {
-			iss >> name;
-			iss >> index;
-		} catch (...) {
+		iss >> name;
+		iss >> index;
+		if (iss.fail())
 			return false;
-		}
 		sendRead(name, index);
 		responseToRead();
 		return true;
@@ -97,10 +88,10 @@ string Client::getMessage() {
 
 //-----------------------------------------------------------------------------
 void Client::sendPut(string name, string subject, string data) {
-	stringstream ss;
-	ss << "put " << name << " " << subject << " " << " " << data.size() << "\n"
+	ostringstream oss;
+	oss << "put " << name << " " << subject << " " << " " << data.size() << endl
 			<< data;
-	send_request(ss.str());
+	send_request(oss.str());
 }
 
 //-----------------------------------------------------------------------------
@@ -134,6 +125,7 @@ void Client::responseToPut() {
 
 //-----------------------------------------------------------------------------
 bool Client::send_request(string request) {
+	cout << "SEND REQUEST: " << request;
 	// prepare to send request
 	const char* ptr = request.c_str();
 	int nleft = request.length();
