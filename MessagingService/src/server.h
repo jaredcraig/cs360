@@ -8,7 +8,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <unistd.h>
-
+#include <iostream>
+#include <sstream>
+#include <vector>
+#include <map>
 #include <string>
 
 using namespace std;
@@ -25,9 +28,14 @@ protected:
 	virtual void close_socket();
 	void serve();
 	void handle(int);
+	string parse(string);
 	string get_request(int);
 	bool send_response(int, string);
+	bool addMessage(string, string, string);
+	string findMessage(string,int);
+	string readPut(string, int);
 
+	map<string, vector<vector<string> > > messages;
 	int server_;
 	int buflen_;
 	char* buf_;
