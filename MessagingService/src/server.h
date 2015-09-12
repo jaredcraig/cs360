@@ -34,6 +34,8 @@ protected:
 	bool addMessage(string, string, string);
 	string findMessage(string,int);
 	string readPut(string, int);
+	string getSubjectList(string);
+	string parseList(vector<vector<string> >);
 
 	map<string, vector<vector<string> > > messages;
 	int server_;

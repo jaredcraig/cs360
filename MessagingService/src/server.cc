@@ -26,38 +26,6 @@ void Server::close_socket() {
 }
 
 //-----------------------------------------------------------------------------
-string Server::findMessage(string name, int index) {
-	// TODO
-	return NULL;
-}
-
-//-----------------------------------------------------------------------------
-bool Server::addMessage(string name, string subject, string data) {
-	vector<vector<string> > messageList;
-	map<string, vector<vector<string> > >::iterator it;
-	try {
-		it = messages.find(name);
-		if (it == messages.end()) {
-			it =
-					messages.insert(
-							pair<string, vector<vector<string> > >(name,
-									messageList)).first;
-		}
-
-		vector<string> subject_data;
-		subject_data.push_back(subject);
-		subject_data.push_back(data);
-		messageList.push_back(subject_data);
-		it->second = messageList;
-
-	} catch (exception &e) {
-		cout << "ERROR: " << e.what() << endl;
-		return false;
-	}
-	return true;
-}
-
-//-----------------------------------------------------------------------------
 void Server::serve() {
 // setup client
 	int client;
@@ -80,6 +48,7 @@ void Server::handle(int client) {
 		// get a request
 		string request = get_request(client);
 		string response = parse(request);
+
 		// break if client is done or an error occurred
 		if (request.empty())
 			break;
@@ -92,36 +61,126 @@ void Server::handle(int client) {
 	close(client);
 }
 
-//-----------------------------------------------------------------------------
-string Server::readPut(string message, int length) {
-	return message.substr(message.size() - length, length);
+// PARSE ----------------------------------------------------------------------
+string Server::parse(string message) {
+	istringstream iss;
+	string cmd = "";
+	string name = "";
+	string subject = "";
+	string response = "error invalid message\n";
+	int i = -1;
+	iss.clear();
+
+	try {
+		iss.str(message);
+		iss >> cmd;
+
+		if (cmd == "put") {
+			iss >> name;
+			iss >> subject;
+			iss >> i;
+
+			if (iss.fail()) {
+				return "error invalid message\n";
+			}
+
+			string data = readPut(message, i);
+
+			if (!addMessage(name, subject, data)) {
+				return "Failed to add message!";
+			}
+			response = "OK\n";
+
+		} else if (cmd == "list") {
+			iss >> name;
+			if (iss.fail())
+				return "error invalid message\n";
+			response = getSubjectList(name);
+
+		} else if (cmd == "get") {
+
+			iss >> name;
+			iss >> i;
+
+			if (iss.fail())
+				return "error invalid message\n";
+
+			response = "";
+		}
+	} catch (exception &e) {
+		cout << "error: " << e.what() << endl;
+	}
+	return response;
 }
 
 //-----------------------------------------------------------------------------
-string Server::parse(string message) {
-	string cmd = "";
-	istringstream iss;
-	iss.str(message);
-	iss >> cmd;
-	if (cmd == "put") {
-		string name;
-		iss >> name;
-		string subject;
-		iss >> subject;
-		int length;
-		iss >> length;
-		if (!iss.fail()) {
-			string data = readPut(message, length);
-			if (!addMessage(name, subject, data))
-				return "Failed to add message!";
-		}
-		cout << "<SERVER> messages size: "
-				<< messages.find(name)->second[0].size() << endl;
-		return "OK\n";
-	} else if (cmd == "list") {
-	} else if (cmd == "get") {
+string Server::getSubjectList(string name) {
+	string list;
+	map<string, vector<vector<string> > >::iterator it;
+	it = messages.find(name);
+
+	if (it == messages.end())
+		return "";
+
+	return parseList(it->second);
+}
+
+//-----------------------------------------------------------------------------
+string Server::parseList(vector<vector<string> > list) {
+	ostringstream oss;
+	ostringstream oss_data;
+
+	for (int i = 0; i < list.size(); i++) {
+		oss_data << i + 1 << " " << list[i][0] << "\n";
 	}
-	return "error invalid message\n";
+	string data = oss_data.str();
+	oss << "list " << data.size() << " " << data;
+	return oss.str();
+}
+
+//-----------------------------------------------------------------------------
+string Server::findMessage(string name, int index) {
+	// TODO
+	return NULL;
+}
+
+//-----------------------------------------------------------------------------
+bool Server::addMessage(string name, string subject, string data) {
+	map<string, vector<vector<string> > >::iterator it;
+	vector<vector<string> > messageList;
+	vector<string> subject_data;
+
+	try {
+		it = messages.find(name);
+		if (it == messages.end()) {
+			it =
+					messages.insert(
+							pair<string, vector<vector<string> > >(name,
+									messageList)).first;
+		}
+
+		messageList = it->second;
+		cout << "<SERVER>[addMessage-messageList-size] " << messageList.size()
+				<< endl;
+
+		subject_data.push_back(subject);
+		subject_data.push_back(data);
+		messageList.push_back(subject_data);
+		it->second = messageList;
+
+		cout << "<SERVER>[addMessage-messageList-size] " << messageList.size()
+				<< endl;
+
+	} catch (exception &e) {
+		cout << "ERROR: " << e.what() << endl;
+		return false;
+	}
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+string Server::readPut(string message, int length) {
+	return message.substr(message.size() - length, length);
 }
 
 //-----------------------------------------------------------------------------
