@@ -32,7 +32,7 @@ protected:
 	string get_request(int);
 	bool send_response(int, string);
 	bool addMessage(string, string, string);
-	string findMessage(string,int);
+	string getMessage(string,int);
 	string readPut(string, int);
 	string getSubjectList(string);
 	string parseList(vector<vector<string> >);

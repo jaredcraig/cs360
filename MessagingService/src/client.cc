@@ -125,7 +125,7 @@ void Client::responseToRead() {
 	istringstream iss;
 	iss.str(response);
 	iss >> word;
-	if (word != "read") {
+	if (word != "message") {
 		cout << "Server returned bad message: " << response;
 		return;
 	}

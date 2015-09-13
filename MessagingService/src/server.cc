@@ -105,7 +105,11 @@ string Server::parse(string message) {
 			if (iss.fail())
 				return "error invalid message\n";
 
-			response = "";
+			string message = getMessage(name, i);
+			if (message == "")
+				return "error no such message for that user\n";
+
+			response = message;
 		}
 	} catch (exception &e) {
 		cout << "error: " << e.what() << endl;
@@ -139,9 +143,23 @@ string Server::parseList(vector<vector<string> > list) {
 }
 
 //-----------------------------------------------------------------------------
-string Server::findMessage(string name, int index) {
-	// TODO
-	return NULL;
+string Server::getMessage(string name, int index) {
+	map<string, vector<vector<string> > >::iterator it;
+	if (index <= 0) return "";
+	it = messages.find(name);
+
+	if (it == messages.end())
+		return "";
+
+	if (index-1 >= it->second.size()) return "";
+	vector<string> message = it->second[index-1];
+	string subject = message[0];
+	string data = message[1];
+
+	ostringstream oss;
+	oss << "message " << subject << " " << data.size() << "\n" << data;
+	if (!oss.fail()) return oss.str();
+	return "";
 }
 
 //-----------------------------------------------------------------------------
@@ -160,16 +178,10 @@ bool Server::addMessage(string name, string subject, string data) {
 		}
 
 		messageList = it->second;
-		cout << "<SERVER>[addMessage-messageList-size] " << messageList.size()
-				<< endl;
-
 		subject_data.push_back(subject);
 		subject_data.push_back(data);
 		messageList.push_back(subject_data);
 		it->second = messageList;
-
-		cout << "<SERVER>[addMessage-messageList-size] " << messageList.size()
-				<< endl;
 
 	} catch (exception &e) {
 		cout << "ERROR: " << e.what() << endl;
