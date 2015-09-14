@@ -46,85 +46,112 @@ void Server::handle(int client) {
 // loop to handle all requests
 	while (1) {
 		// get a request
-		string request = get_request(client);
-		string response = parse(request);
-
+		memset(buf_, 0, buflen_ + 1);
+		int nread = recv(client, buf_, 1024, 0);
+		string data = buf_;
 		// break if client is done or an error occurred
-		if (request.empty())
+		if (nread == 0)
 			break;
-		// send response
-		bool success = send_response(client, response);
-		// break if an error occurred
-		if (not success)
-			break;
+
+		cache = data;
+		string message = readMessage();
+
+		if (message == "")
+			continue;
+
+		string response = parse(message, client);
+		send_response(client, response);
 	}
-	close(client);
+	//close(client);
+}
+
+//-----------------------------------------------------------------------------
+string Server::readMessage() {
+	int index = cache.find("\n");
+	if (index == -1) {
+		return "";
+	}
+
+	// copy all characters up to and including the newline character
+	string message = cache.substr(0, index + 1);
+
+	cache = cache.substr(index + 1, cache.size());
+
+	return message;
 }
 
 // PARSE ----------------------------------------------------------------------
-string Server::parse(string message) {
+string Server::parse(string &message, int client) {
 	istringstream iss;
 	string cmd = "";
 	string name = "";
 	string subject = "";
 	string response = "error invalid message\n";
 	int i = -1;
+
 	iss.clear();
+	iss.str(message);
+	iss >> cmd;
 
-	try {
-		iss.str(message);
-		iss >> cmd;
+	if (cmd == "put") {
+		iss >> name;
+		iss >> subject;
+		iss >> i;
 
-		if (cmd == "put") {
-			iss >> name;
-			iss >> subject;
-			iss >> i;
-
-			if (iss.fail()) {
-				return "error invalid message\n";
-			}
-
-			string data = readPut(message, i);
-
-			if (!addMessage(name, subject, data)) {
-				return "Failed to add message!";
-			}
-			response = "OK\n";
-
-		} else if (cmd == "list") {
-			iss >> name;
-			if (iss.fail())
-				return "error invalid message\n";
-			response = getSubjectList(name);
-
-		} else if (cmd == "get") {
-
-			iss >> name;
-			iss >> i;
-
-			if (iss.fail())
-				return "error invalid message\n";
-
-			string message = getMessage(name, i);
-			if (message == "")
-				return "error no such message for that user\n";
-
-			response = message;
+		if (iss.fail()) {
+			return "error invalid message\n";
 		}
-	} catch (exception &e) {
-		cout << "error: " << e.what() << endl;
+		string data = readPut(client, i);
+
+		if (!addMessage(name, subject, data)) {
+			return "Failed to add message!";
+		}
+		response = "OK\n";
+
+	} else if (cmd == "list") {
+		iss >> name;
+		if (iss.fail())
+			return "error invalid message\n";
+		response = getSubjectList(name);
+
+	} else if (cmd == "get") {
+
+		iss >> name;
+		iss >> i;
+
+		if (iss.fail())
+			return "error invalid message\n";
+
+		string message = getMessage(name, i);
+		if (message == "")
+			return "error no such message for that user\n";
+
+		response = message;
+	} else if (cmd == "reset") {
+		if (resetMessages())
+			response = "OK\n";
 	}
 	return response;
 }
 
 //-----------------------------------------------------------------------------
+bool Server::resetMessages() {
+	map<string, vector<vector<string> > >::iterator it;
+	it = messages.begin();
+	while (it != messages.end()) {
+		messages.erase(it);
+		it++;
+	}
+	return messages.empty();
+}
+
+//-----------------------------------------------------------------------------
 string Server::getSubjectList(string name) {
-	string list;
 	map<string, vector<vector<string> > >::iterator it;
 	it = messages.find(name);
 
 	if (it == messages.end())
-		return "";
+		return " 0\n";
 
 	return parseList(it->second);
 }
@@ -138,61 +165,76 @@ string Server::parseList(vector<vector<string> > list) {
 		oss_data << i + 1 << " " << list[i][0] << "\n";
 	}
 	string data = oss_data.str();
-	oss << "list " << data.size() << " " << data;
+	oss << "list " << list.size() << endl << data;
 	return oss.str();
 }
 
 //-----------------------------------------------------------------------------
 string Server::getMessage(string name, int index) {
 	map<string, vector<vector<string> > >::iterator it;
-	if (index <= 0) return "";
+	if (index <= 0)
+		return "";
 	it = messages.find(name);
 
 	if (it == messages.end())
 		return "";
 
-	if (index-1 >= it->second.size()) return "";
-	vector<string> message = it->second[index-1];
+	if (index - 1 >= it->second.size())
+		return "";
+	vector<string> message = it->second[index - 1];
 	string subject = message[0];
 	string data = message[1];
 
 	ostringstream oss;
 	oss << "message " << subject << " " << data.size() << "\n" << data;
-	if (!oss.fail()) return oss.str();
+	if (!oss.fail())
+		return oss.str();
 	return "";
 }
 
 //-----------------------------------------------------------------------------
-bool Server::addMessage(string name, string subject, string data) {
+bool Server::addMessage(string name, string subject, string &data) {
 	map<string, vector<vector<string> > >::iterator it;
 	vector<vector<string> > messageList;
 	vector<string> subject_data;
 
-	try {
-		it = messages.find(name);
-		if (it == messages.end()) {
-			it =
-					messages.insert(
-							pair<string, vector<vector<string> > >(name,
-									messageList)).first;
-		}
-
-		messageList = it->second;
-		subject_data.push_back(subject);
-		subject_data.push_back(data);
-		messageList.push_back(subject_data);
-		it->second = messageList;
-
-	} catch (exception &e) {
-		cout << "ERROR: " << e.what() << endl;
-		return false;
+	it = messages.find(name);
+	if (it == messages.end()) {
+		it =
+				messages.insert(
+						pair<string, vector<vector<string> > >(name,
+								messageList)).first;
 	}
+
+	messageList = it->second;
+	subject_data.push_back(subject);
+	subject_data.push_back(data);
+	messageList.push_back(subject_data);
+	it->second = messageList;
+
 	return true;
 }
 
 //-----------------------------------------------------------------------------
-string Server::readPut(string message, int length) {
-	return message.substr(message.size() - length, length);
+string Server::readPut(int client, int length) {
+	string data = "";
+	data += cache;
+	while (data.size() < length) {
+		memset(buf_, 0, buflen_ + 1);
+		int nread = recv(client, buf_, 1024, 0);
+		string d = buf_;
+		if (d.empty()) {
+			return "";
+		}
+		data += d;
+	}
+	if (data.size() > length) {
+		cache = data.substr(length, data.size());
+		data = data.substr(0, length);
+	} else {
+		cache.clear();
+	}
+	return data;
 }
 
 //-----------------------------------------------------------------------------

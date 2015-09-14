@@ -73,6 +73,10 @@ bool Client::parseCommand(string command) {
 		sendRead(name, index);
 		responseToRead();
 		return true;
+	} else if (cmd == "reset") {
+		send_request("reset\n");
+		get_response();
+		return true;
 	}
 	return false;
 }

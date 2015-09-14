@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 	int option;
 
 	// setup default arguments
-	int port = 8080;
+	int port = 5000;
 	string host = "localhost";
 
 	// process command line options using getopt()

@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
 	int option, port;
 
 	// setup default arguments
-	port = 8080;
+	port = 5000;
 
 	// process command line options using getopt()
 	// see "man 3 getopt"

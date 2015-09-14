@@ -28,17 +28,20 @@ protected:
 	virtual void close_socket();
 	void serve();
 	void handle(int);
-	string parse(string);
+	string parse(string&, int);
 	string get_request(int);
 	bool send_response(int, string);
-	bool addMessage(string, string, string);
-	string getMessage(string,int);
-	string readPut(string, int);
+	bool addMessage(string, string, string&);
+	string getMessage(string, int);
 	string getSubjectList(string);
 	string parseList(vector<vector<string> >);
+	bool resetMessages();
+	string readMessage();
+	string readPut(int, int);
 
 	map<string, vector<vector<string> > > messages;
 	int server_;
 	int buflen_;
 	char* buf_;
+	string cache;
 };
