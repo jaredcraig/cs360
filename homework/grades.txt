@@ -1,0 +1,15 @@
+# Homework 1
+John 8
+Emma 10
+Andrea 7
+Steve 3
+Alice 9
+Harold 9
+
+# Homework 2
+John 9
+Emma 9
+Andrea 6
+Steve 10
+Alice 8
+Harold 7
