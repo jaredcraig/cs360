@@ -4,6 +4,11 @@ import socket
 import sys
 import traceback
 
+try:
+    from http_parser.parser import HttpParser
+except ImportError:
+    import http_parser.pyparser
+
 class Poller:
     """ Polling server """
     def __init__(self,port):
@@ -11,7 +16,11 @@ class Poller:
         self.port = port
         self.open_socket()
         self.clients = {}
+        self.media = {}
+        self.hostpath = {}
         self.size = 1024
+        self.timeout = 0
+        self.config_file = "web-server-testing/tests/web.conf"
 
     def open_socket(self):
         """ Setup the socket for incoming clients """
@@ -27,11 +36,27 @@ class Poller:
             print "Could not open socket: " + message
             sys.exit(1)
 
+    def load_config(self):
+        f = open(self.config_file, 'r')
+        for line in f:
+            data = line.split()
+            if not data:
+                continue
+            if data[0] == 'media':
+                self.media[data[1]] = data[2]
+                print self.media[data[1]]
+            elif data[0] == 'host':
+                self.hostpath[data[1]] = data[2]
+                print self.hostpath[data[1]]
+            elif data[0] == 'parameter':
+                self.timeout = data[2]
+        
     def run(self):
         """ Use poll() to handle each incoming client."""
         self.poller = select.epoll()
         self.pollmask = select.EPOLLIN | select.EPOLLHUP | select.EPOLLERR
         self.poller.register(self.server,self.pollmask)
+        self.load_config();
         while True:
             # poll sockets
             try:
